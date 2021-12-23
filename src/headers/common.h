@@ -20,6 +20,6 @@
 #define TEST_PORT 1337
 
 /* Sockets buffers length */
-#define LEN 4096
+#define BUFFERLEN 4096
 
-int err_n_die(char *msg[]);
+#define err_n_die(char msg[]) {fprintf(stderr, "\033[0;31m%s\n\033[0m", msg); free(msg); exit(1);};
