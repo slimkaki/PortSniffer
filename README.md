@@ -1,6 +1,6 @@
 # PortSniffer
 
-_Made by:_ Rafael Almada (slimkaki)
+_Made by: Rafael Almada (slimkaki)_
 ___
 
 ## Description
@@ -21,4 +21,4 @@ $ gcc -Wall src/main.c -o output/sniff
 $ ./output/sniffer <IP Address> <Port to Sniff>
 ```
 
-> Disclaimer: This software is fully created by me (slimkaki) and it's intention is for educational purposes. Creating a low-level socket code is a good material for studies.
+> Disclaimer: This software is fully created by me (slimkaki) and it's intention is for educational purposes only. Creating a low-level socket code is a good material for studies.

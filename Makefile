@@ -1,5 +1,8 @@
-sniff: src/main.c
-	gcc src/main.c -o output/sniff
+$(CC) = gcc
 
-target: dependencies
-	action
+# Compiling main file
+sniffer:
+	$(CC) src/main.c -o sniffer
+
+clean:
+	rm sniffer

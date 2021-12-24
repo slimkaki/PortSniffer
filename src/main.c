@@ -19,28 +19,29 @@ void welcome() {
 int setupSocket(char *IP, int port) {
     /* server socket */
     struct sockaddr_in server;
+
     /* socket file descriptor */
     int sockfd;
 
+    /* local variables */
+    int n, sendbytes;
     int len = sizeof(server);
-    int slen;
 
-    /* Receive buffer */
-    char buffer_in[BUFFERLEN];
-    /* Send buffer */
-    char buffer_out[BUFFERLEN];
+    char sendline[BUFFERLEN];
+    char recvline[BUFFERLEN];
 
-    printf("Trying connection with %s on port %d\n\n", IP, port);
+    printf("Trying connection with IP %s on port %d\n\n", IP, port);
     /*
-     * Creates a socket for the client
+     * Creates a stream socket for the client to comunicate with any IP address
      */
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
         sprintf(err_msg, "Error on client socket creation");
-        err_n_die(err_msg);
+        err_n_die(&err_msg);
     }
     fprintf(stdout, "Client socket created with fd: %d\n", sockfd);
 
+    bzero(&server, sizeof(server));
 
     /* Defines the connection properties */
     server.sin_family = AF_INET;
@@ -48,64 +49,51 @@ int setupSocket(char *IP, int port) {
     server.sin_addr.s_addr = inet_addr(IP);
     memset(server.sin_zero, 0x0, 8);
 
+    if (inet_pton(AF_INET, IP, &server.sin_addr) <= 0) {
+        char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
+        sprintf(err_msg, "inet_pton error for %s", IP);
+        err_n_die(&err_msg);
+    }
+
     /* Tries to connect to the server */
-    if (connect(sockfd, (struct sockaddr*) &server, len) == -1) {
+    if (connect(sockfd, (struct sockaddr*) &server, len) < 0) {
         char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
         sprintf(err_msg, "Can't connect to server of IP '%s'", IP);
-        err_n_die(err_msg);
+        err_n_die(&err_msg);
     }
 
     /* Receives the presentation message from the server */
-    if ((slen = recv(sockfd, buffer_in, BUFFERLEN, 0)) > 0) {
-        buffer_in[slen + 1] = '\0';
-        fprintf(stdout, "Server says: %s\n", buffer_in);
-    }
-
-    /*
-    * Commuicate with the server until the exit message come
-    */
-    // while (1) {
-    //     /* Zeroing the buffers */
-    //     memset(buffer_in, 0x0, BUFFERLEN);
-    //     memset(buffer_out, 0x0, BUFFERLEN);
-
-    //     printf("Say something to the server: ");
-    //     fgets(buffer_out, BUFFERLEN, stdin);
-
-    //     /* Sends the read message to the server through the socket */
-    //     send(sockfd, buffer_out, strlen(buffer_out), 0);
-
-    //     /* Receives an answer from the server */
-    //     slen = recv(sockfd, buffer_in, BUFFERLEN, 0);
-    //     printf("Server answer: %s\n", buffer_in);
-
-    //     /* 'bye' message finishes the connection */
-    //     if(strcmp(buffer_in, "bye") == 0)
-    //         break;
+    // if ((slen = recv(sockfd, buffer_in, BUFFERLEN, 0)) > 0) {
+    //     buffer_in[slen + 1] = '\0';
+    //     fprintf(stdout, "Server says: %s\n", buffer_in);
     // }
 
-    char *sendline = (char *) malloc(20*sizeof(char));
+
+    // We're connected and checking if there is a http service running on port
+    // char *sendline[] = (char *) malloc(20*sizeof(char));
     sprintf(sendline, "GET / HTTP/1.1");
-    int sendbytes = strlen(sendline); 
+    sendbytes = strlen(sendline); 
 
     if (write(sockfd, sendline, sendbytes) != sendbytes) {
         char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
         sprintf(err_msg, "[Socket] Write error.");
-        err_n_die(err_msg);
+        err_n_die(&err_msg);
     }
 
-    memset(recvline, 0, MAXLINE);
+    memset(recvline, 0, BUFFERLEN);
 
-    while ((n = read(sockfd, recvline, MAXLINE-1)) > 0) {
+    printf("Waiting for server answer");
+    while ((n = read(sockfd, recvline, BUFFERLEN-1)) > 0) {
         boldBlue();
         printf("Response from server: %s", recvline);
         reset();
-        memset(recvline, 0, MAXLINE);
+        memset(recvline, 0, BUFFERLEN);
     }
-    if (n < 0)
+    if (n < 0) {
         char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
         sprintf(err_msg, "[Socket] Read error.");
-        err_n_die(err_msg);
+        err_n_die(&err_msg);
+    }
 
     // Send msg to server
     // send(sockfd, sendline, strlen(sendline), 0);
@@ -116,7 +104,7 @@ int setupSocket(char *IP, int port) {
 
     free(sendline);
 
-    /* Close the connection whith the server */
+    // /* Close the connection whith the server */
     close(sockfd);
 
     fprintf(stdout, "\nConnection closed\n\n");
@@ -166,7 +154,7 @@ int main(int argc, char *argv[]) {
                 // Unknown argument
                 char *argumentString = (char*)malloc(strlen(argv[i])*sizeof(char));
                 sprintf(argumentString, "Unknown argument '%s'.", argv[i]);
-                err_n_die(argumentString);
+                err_n_die(&argumentString);
             }
         }
     }

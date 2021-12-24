@@ -22,4 +22,4 @@
 /* Sockets buffers length */
 #define BUFFERLEN 4096
 
-#define err_n_die(char msg[]) {fprintf(stderr, "\033[0;31m%s\n\033[0m", msg); free(msg); exit(1);};
+void err_n_die(char *msg[]) {fprintf(stderr, "\033[0;31m%s\n\033[0m", *msg); free(msg); exit(1);};
