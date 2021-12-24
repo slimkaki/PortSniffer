@@ -3,18 +3,9 @@
 typedef struct {
     char *IP;
     int PORT;
-    int PORTS[];
+    int THREADS_NUM;
+    bool ALL;
 } ServerData;
-
-void welcome() {
-    printf("=================================================================\n");
-    boldBlue(); printf("\tWelcome to the Port-Sniffer");
-    reset(); printf(" | ");
-    boldRed(); printf("ポートスニファー\n");
-    boldGreen(); printf("\t\t\t--made by slimkaki\n");
-    reset();
-    printf("=================================================================\n\n");
-}
 
 int setupSocket(char *IP, int port) {
     /* server socket */
@@ -25,7 +16,7 @@ int setupSocket(char *IP, int port) {
 
     /* local variables */
     int n, sendbytes;
-    int len = sizeof(server);
+    // int len = sizeof(server);
 
     char sendline[BUFFERLEN];
     char recvline[BUFFERLEN];
@@ -56,22 +47,13 @@ int setupSocket(char *IP, int port) {
     }
 
     /* Tries to connect to the server */
-    if (connect(sockfd, (struct sockaddr*) &server, len) < 0) {
+    if (connect(sockfd, (SA *) &server, sizeof(server)) < 0) {
         char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
-        sprintf(err_msg, "Can't connect to server of IP '%s'", IP);
+        sprintf(err_msg, "Can't connect to server on IP '%s'", IP);
         err_n_die(&err_msg);
     }
 
-    /* Receives the presentation message from the server */
-    // if ((slen = recv(sockfd, buffer_in, BUFFERLEN, 0)) > 0) {
-    //     buffer_in[slen + 1] = '\0';
-    //     fprintf(stdout, "Server says: %s\n", buffer_in);
-    // }
-
-
-    // We're connected and checking if there is a http service running on port
-    // char *sendline[] = (char *) malloc(20*sizeof(char));
-    sprintf(sendline, "GET / HTTP/1.1");
+    sprintf(sendline, "GET / HTTP/1.1\r\n\r\n");
     sendbytes = strlen(sendline); 
 
     if (write(sockfd, sendline, sendbytes) != sendbytes) {
@@ -79,13 +61,13 @@ int setupSocket(char *IP, int port) {
         sprintf(err_msg, "[Socket] Write error.");
         err_n_die(&err_msg);
     }
-
     memset(recvline, 0, BUFFERLEN);
 
-    printf("Waiting for server answer");
     while ((n = read(sockfd, recvline, BUFFERLEN-1)) > 0) {
         boldBlue();
         printf("Response from server: %s", recvline);
+        boldGreen();
+        printf("\n\nSize of message: %lu", sizeof(recvline));
         reset();
         memset(recvline, 0, BUFFERLEN);
     }
@@ -95,20 +77,11 @@ int setupSocket(char *IP, int port) {
         err_n_die(&err_msg);
     }
 
-    // Send msg to server
-    // send(sockfd, sendline, strlen(sendline), 0);
-
-    /* Receives an answer from the server */
-    // slen = recv(sockfd, buffer_in, BUFFERLEN, 0);
-    // printf("Server answer: %s\n", buffer_in);
-
-    free(sendline);
-
-    // /* Close the connection whith the server */
+    /* Close the connection whith the server */
     close(sockfd);
-
     fprintf(stdout, "\nConnection closed\n\n");
-
+    free(sendline);
+    exit(0);
     return 0;
 }
 
@@ -131,8 +104,7 @@ int main(int argc, char *argv[]) {
     reset();
     //====================================================
     welcome();
-    ServerData srv;
-    int numOfThreads;
+    ServerData srv = {"0.0.0.0", 8000, 4, false};
     if (argc > 1) {
         for (int i = 1; i < argc; i++) {
             printf("Now looking on: %s and %s\n", argv[i], argv[i+1]);
@@ -144,8 +116,10 @@ int main(int argc, char *argv[]) {
                 srv.PORT = atoi(argv[i+1]);
                 i++;
             } else if (strcmp(argv[i], "-T") ==0 || strcmp(argv[i], "--threads") == 0) {
-                numOfThreads = atoi(argv[i+1]);
+                srv.THREADS_NUM = atoi(argv[i+1]);
                 i++;
+            } else if (strcmp(argv[i], "--all")) {
+                srv.ALL = true;
             } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
                 printf("Usage of the port-sniffer:\n");
                 printf("\033[1;31m-T <Integer>\033[0m or \033[1;31m--threads <Integer>\033[0m: Number of threads\n");
@@ -158,7 +132,11 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    
-    setupSocket(srv.IP, srv.PORT);
+    if (!srv.ALL) {
+        setupSocket(srv.IP, srv.PORT);
+    } else {
+        // Scan all ports
+        printf("Needs to be implemented\n");
+    }
     return 0;
 }

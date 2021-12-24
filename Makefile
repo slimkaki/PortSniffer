@@ -6,3 +6,5 @@ sniffer:
 
 clean:
 	rm sniffer
+
+.PHONY: sniffer clean

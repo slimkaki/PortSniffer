@@ -16,10 +16,22 @@
 #include "colors.h"
 
 // Global variables
-#define TEST_ADDR "192.168.15.68"
-#define TEST_PORT 1337
+#define SA struct sockaddr
+#define TIMEOUT 10 // seconds
 
 /* Sockets buffers length */
 #define BUFFERLEN 4096
 
+/* Declaring common functions*/
+
 void err_n_die(char *msg[]) {fprintf(stderr, "\033[0;31m%s\n\033[0m", *msg); free(msg); exit(1);};
+
+void welcome() {
+    printf("=================================================================\n");
+    boldBlue(); printf("\tWelcome to the Port-Sniffer");
+    reset(); printf(" | ");
+    boldRed(); printf("ポートスニファー\n");
+    boldGreen(); printf("\t\t\t--made by slimkaki\n");
+    reset();
+    printf("=================================================================\n\n");
+}
