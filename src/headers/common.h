@@ -12,17 +12,30 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-// Colors on stdout header file
+// Threading library
+#include <pthread.h>
+
+/* Colors on stdout header file */
 #include "colors.h"
 
-// Global variables
+/* Global thread struct */
+
+struct ThreadParams {
+    char *ip;
+    int port;
+};
+
+/* Global variables */
 #define SA struct sockaddr
 #define TIMEOUT 10 // seconds
+#define MAX_PORTS 65535
 
 /* Sockets buffers length */
 #define BUFFERLEN 4096
 
 /* Declaring common functions*/
+
+int setupSocket(char *IP, int port);
 
 void err_n_die(char *msg[]) {fprintf(stderr, "\033[0;31m%s\n\033[0m", *msg); free(msg); exit(1);};
 

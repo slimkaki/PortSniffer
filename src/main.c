@@ -79,10 +79,114 @@ int setupSocket(char *IP, int port) {
 
     /* Close the connection whith the server */
     close(sockfd);
-    fprintf(stdout, "\nConnection closed\n\n");
+    fprintf(stdout, "\nConnection closed -- port %d\n\n", port);
     free(sendline);
     exit(0);
     return 0;
+}
+
+void *threadSocket(char *IP, int port) {
+    /* server socket */
+    struct sockaddr_in server;
+
+    /* socket file descriptor */
+    int sockfd;
+
+    /* local variables */
+    int n, sendbytes;
+    // int len = sizeof(server);
+
+    char sendline[BUFFERLEN];
+    char recvline[BUFFERLEN];
+
+    printf("Trying connection with IP %s on port %d\n\n", IP, port);
+    /*
+     * Creates a stream socket for the client to comunicate with any IP address
+     */
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
+        sprintf(err_msg, "Error on client socket creation");
+        err_n_die(&err_msg);
+    }
+    fprintf(stdout, "Client socket created with fd: %d\n", sockfd);
+
+    bzero(&server, sizeof(server));
+
+    /* Defines the connection properties */
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+    server.sin_addr.s_addr = inet_addr(IP);
+    memset(server.sin_zero, 0x0, 8);
+
+    if (inet_pton(AF_INET, IP, &server.sin_addr) <= 0) {
+        char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
+        sprintf(err_msg, "inet_pton error for %s", IP);
+        err_n_die(&err_msg);
+    }
+
+    /* Tries to connect to the server */
+    if (connect(sockfd, (SA *) &server, sizeof(server)) < 0) {
+        char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
+        sprintf(err_msg, "Can't connect to server on IP '%s'", IP);
+        err_n_die(&err_msg);
+    }
+
+    sprintf(sendline, "GET / HTTP/1.1\r\n\r\n");
+    sendbytes = strlen(sendline); 
+
+    if (write(sockfd, sendline, sendbytes) != sendbytes) {
+        char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
+        sprintf(err_msg, "[Socket] Write error.");
+        err_n_die(&err_msg);
+    }
+    memset(recvline, 0, BUFFERLEN);
+
+    while ((n = read(sockfd, recvline, BUFFERLEN-1)) > 0) {
+        boldBlue();
+        printf("Response from server: %s", recvline);
+        boldGreen();
+        printf("\n\nSize of message: %lu", sizeof(recvline));
+        reset();
+        memset(recvline, 0, BUFFERLEN);
+    }
+    if (n < 0) {
+        char *err_msg = (char *) malloc(strlen(IP)*sizeof(char));
+        sprintf(err_msg, "[Socket] Read error.");
+        err_n_die(&err_msg);
+    }
+
+    /* Close the connection whith the server */
+    close(sockfd);
+    fprintf(stdout, "\nConnection closed -- port %d\n\n", port);
+    free(sendline);
+    // exit(0);
+    // return 0;
+}
+
+void createThreads(ServerData srv) {
+    /*
+    Create threads to run the sniffing on all ports
+    */
+    for (int p = 1; p < MAX_PORTS; p += srv.THREADS_NUM) {
+        pthread_t *tids = malloc(sizeof(pthread_t)*srv.THREADS_NUM);
+        int e[srv.THREADS_NUM];
+        for (int i = 0; i < srv.THREADS_NUM; i++) {
+            struct ThreadParams *args= malloc(sizeof(srv.IP) + sizeof(int));
+            if (args == NULL) {
+                fprintf(stderr, "It was not possible to allocate memory to the thread.\n");
+                exit(EXIT_FAILURE);
+            }
+            fprintf(stdout, "");
+            args->ip = srv.IP;
+            args->port = p;
+            // setupSocket(srv.IP, p);
+            e[i] = pthread_create(&tids[i], NULL, threadSocket, args);
+        }
+        for (int j = 0; j < srv.THREADS_NUM; j++) {
+            void *pv;
+            pthread_join(tids[j], &pv);
+        }
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -135,8 +239,7 @@ int main(int argc, char *argv[]) {
     if (!srv.ALL) {
         setupSocket(srv.IP, srv.PORT);
     } else {
-        // Scan all ports
-        printf("Needs to be implemented\n");
+        createThreads(srv);
     }
     return 0;
 }
