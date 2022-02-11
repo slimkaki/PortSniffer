@@ -1,7 +1,10 @@
 # PortSniffer
 
 _Made by: Rafael Almada (slimkaki)_
+
 ___
+
+> I make this project in my free time as an opportunity to learn more, but note that it is not fully working and can be improved in many ways.
 
 ## Description
 
